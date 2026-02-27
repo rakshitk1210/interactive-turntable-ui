@@ -64,7 +64,7 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
         <div className="absolute left-[607px] top-[245.8px] w-[60.5px] h-[264px] select-none z-30 font-['Bree_Serif',serif]">
 
             {/* Number labels */}
-            <div className="absolute left-0 top-[12px] w-[7px] h-[223px] flex flex-col justify-between items-end text-[8px] text-[#b7b7b7] leading-none pointer-events-none">
+            <div className="absolute left-0 top-[12px] w-[7px] h-[223px] flex flex-col justify-between items-end text-[8px] text-[#b7b7b7] leading-none pointer-events-none opacity-50">
                 <div className="h-[4px] flex items-center"><span>+8</span></div>
                 <div className="h-[4px] flex items-center"><span>6</span></div>
                 <div className="h-[4px] flex items-center"><span>4</span></div>
@@ -77,14 +77,14 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
             </div>
 
             {/* Tick marks */}
-            <div className="absolute left-[9px] top-[12px] w-[4px] h-[223px] flex flex-col justify-between pointer-events-none">
+            <div className="absolute left-[9px] top-[12px] w-[4px] h-[223px] flex flex-col justify-between pointer-events-none opacity-50">
                  {[...Array(9)].map((_, i) => (
                      <div key={i} className="w-full h-[4px] bg-[#b7b7b7] shrink-0" />
                  ))}
             </div>
 
             {/* Vertical reference line */}
-            <div className="absolute left-[13px] top-[12px] h-[223px] w-[1px] pointer-events-none">
+            <div className="absolute left-[13px] top-[12px] h-[223px] w-[1px] pointer-events-none opacity-50">
                 <img alt="" className="block w-full h-full" src={pitchLine} draggable={false} />
             </div>
 
@@ -102,7 +102,7 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
                     style={{ touchAction: 'none' }}
                 >
                     {/* Track background */}
-                    <div className="absolute inset-0 bg-[#f4f4f4] rounded-[8px] shadow-[inset_0px_0px_7px_2px_rgba(0,0,0,0.03)] pointer-events-none" />
+                    <div className="absolute inset-0 bg-[#f4f4f4] rounded-[8px] shadow-[inset_0px_0px_7px_2px_rgba(0,0,0,0.03)] pointer-events-none opacity-50" />
 
                     {/* Groove */}
                     <div className="absolute left-[17px] top-[12.5px] w-[6px] h-[223px] bg-[#dadada] rounded-[99px] pointer-events-none">
@@ -124,7 +124,7 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
 
                 {/* PITCH label */}
                 <div className="absolute bottom-0 w-full text-center">
-                    <p className="text-[8px] text-[#b7b7b7] font-serif leading-none">PITCH</p>
+                    <p className="text-[8px] text-[#b7b7b7] font-serif leading-none opacity-70">PITCH</p>
                 </div>
             </div>
 

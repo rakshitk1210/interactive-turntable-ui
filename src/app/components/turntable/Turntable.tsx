@@ -105,6 +105,7 @@ export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, 
 
       {/* Content layer */}
       <div className="absolute inset-0">
+
         {/* Tone arm base plate — rendered below the platter so it tucks behind the record */}
         <svg
           className="absolute pointer-events-none"
@@ -113,6 +114,7 @@ export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, 
           height="195"
           viewBox="0 0 194.562 194.562"
           fill="none"
+          overflow="visible"
         >
           <defs>
             <filter id="filter0_i_armBase" x="0" y="0" width="194.562" height="194.562" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
@@ -128,7 +130,7 @@ export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, 
             </filter>
           </defs>
           <g filter="url(#filter0_i_armBase)">
-            <circle cx="97.2812" cy="97.2812" r="97.2812" fill="#F8F8F8" />
+            <circle cx="97.2812" cy="97.2812" r="97.2812" fill="#F8F8F8" fillOpacity={0.5} paintOrder="stroke fill" />
           </g>
         </svg>
 

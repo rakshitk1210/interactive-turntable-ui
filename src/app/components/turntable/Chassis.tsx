@@ -3,8 +3,20 @@ import React from 'react';
 export const Chassis: React.FC<{ borderRadius?: number }> = ({ borderRadius = 48 }) => {
   return (
     <div
-      className="absolute inset-0 w-[720px] h-[540px] overflow-hidden bg-white shadow-[inset_0px_0px_11px_11px_rgba(152,152,152,0.26)] pointer-events-none"
-      style={{ borderRadius: `${borderRadius}px` }}
-    />
+      className="absolute inset-0 w-[720px] h-[540px] overflow-hidden pointer-events-none"
+      style={{ borderRadius: `${borderRadius}px`, backgroundColor: 'white' }}
+    >
+      {/* Wood grain texture at 40% opacity, matching reference design */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/wood-texture.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.4,
+          borderRadius: `${borderRadius}px`,
+        }}
+      />
+    </div>
   );
 };
