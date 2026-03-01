@@ -11,6 +11,7 @@ import centerPin from '../../../assets/center-pin.svg';
 import albumCoverDefault from '../../../assets/album-cover-default.jpg';
 import diskLightEffect from '../../../assets/disk-light-effect.svg';
 
+
 const SECONDS_PER_REVOLUTION = 1.8;
 
 interface PlatterProps {
@@ -122,7 +123,7 @@ export const Platter: React.FC<PlatterProps> = ({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {/* Outer disk (gold rim) */}
+        {/* Outer disk (gold rim) — texture is baked into the SVG */}
         <div className="absolute left-[19.82px] top-[19.81px] w-[440.37px] h-[440.37px]">
           <img alt="" className="absolute block w-full h-full" src={diskOuter} draggable={false} />
         </div>
@@ -159,10 +160,8 @@ export const Platter: React.FC<PlatterProps> = ({
         </div>
 
         {/* Center pin */}
-        <div className="absolute left-[235.07px] top-[235.07px] w-[9.859px] h-[9.859px]">
-          <div className="absolute" style={{ inset: '-16.67% -100% -100% -16.67%' }}>
-            <img alt="" className="block w-full h-full" src={centerPin} draggable={false} />
-          </div>
+        <div className="absolute" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '21.3612px', height: '21.3612px' }}>
+          <img alt="" className="block w-full h-full" src={centerPin} draggable={false} />
         </div>
 
         {/* Light effect overlay — rotates with the vinyl */}

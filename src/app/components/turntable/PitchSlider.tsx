@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import pitchLine from '../../../assets/pitch-line.svg';
+import goldTexture from '../../../assets/gold-texture-tile.jpg';
 
 interface PitchSliderProps {
     value: number;
@@ -58,8 +59,6 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
 
     const displayValue = isDragging && draftValue !== null ? draftValue : value;
     const currentY = valueToY(displayValue);
-    const isCenter = Math.abs(displayValue - 1.0) < 0.002;
-
     return (
         <div className="absolute left-[607px] top-[245.8px] w-[60.5px] h-[264px] select-none z-30 font-['Bree_Serif',serif]">
 
@@ -115,10 +114,22 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
                         style={{ top: `calc(${GROOVE_TOP_OFFSET}px + ${currentY}px - 18.5px)` }}
                     >
                         <div className="absolute inset-0 bg-[#333] rounded-[9px] shadow-[0px_1px_12px_4px_rgba(0,0,0,0.1)]" />
-                        <div className="absolute top-[18.5px] left-0 w-full h-[3px] bg-[#fcdf92] shadow-[0px_2px_3px_0px_rgba(0,0,0,0.04)]" />
-                        {isCenter && (
-                            <div className="absolute top-[19px] left-1/2 -translate-x-1/2 w-[4px] h-[2px] bg-[#adff2f] shadow-[0_0_8px_2px_#adff2f] rounded-full opacity-60" />
-                        )}
+                        {/* Gold center stripe with metallic texture */}
+                        <div
+                          className="absolute top-[18.5px] left-0 w-full h-[3px] shadow-[0px_2px_3px_0px_rgba(0,0,0,0.04)] overflow-hidden"
+                          style={{ backgroundColor: '#fcdf92', isolation: 'isolate' }}
+                        >
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              backgroundImage: `url(${goldTexture})`,
+                              backgroundSize: 'cover',
+                              backgroundRepeat: 'no-repeat',
+                              mixBlendMode: 'multiply',
+                              opacity: 0.35,
+                            }}
+                          />
+                        </div>
                     </div>
                 </div>
 

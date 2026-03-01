@@ -4,6 +4,7 @@ import armSvg from '../../../assets/arm-updated.svg';
 import pickupSfx from '../../../assets/tonearm-pickup.mp3';
 import dropSfx from '../../../assets/tonearm-drop.mp3';
 
+
 interface ToneArmProps {
   angle: number;
   onAngleChange: (angle: number) => void;
@@ -29,12 +30,12 @@ export const ToneArm: React.FC<ToneArmProps> = ({ angle, onAngleChange, onDragEn
 
   // Container is positioned so that PIVOT_X/Y lands exactly on the arm holder circle
   // center in turntable-space: (475 + 97.28, 30 + 97.28) = (572.28, 127.28)
-  const POS_LEFT = 501.8; // 572.28 - 70.49
-  const POS_TOP  = 52.4;  // 127.28 - 74.90
+  const POS_LEFT = 501.8; // 572.28 - 70.48
+  const POS_TOP  = 42.66; // 127.28 - 84.62
 
-  // Bearing-pin circle center in the new SVG's coordinate system (viewBox 0 0 121 434)
-  const PIVOT_X = 70.49;
-  const PIVOT_Y = 74.90;
+  // Bearing-pin circle center in the SVG's coordinate system (viewBox 0 0 145 464)
+  const PIVOT_X = 70.48;
+  const PIVOT_Y = 84.62;
 
   // The SVG arm is drawn at this angle — used to offset state angle to a CSS rotation
   const ASSET_ROTATION = -27.46;
@@ -45,7 +46,7 @@ export const ToneArm: React.FC<ToneArmProps> = ({ angle, onAngleChange, onDragEn
     if (!containerRef.current) return null;
     const rect = containerRef.current.getBoundingClientRect();
     // Compensate for any CSS scale on an ancestor (e.g. App.tsx ttScale)
-    const scale = rect.width / 121;
+    const scale = rect.width / 145;
     return {
       x: rect.left + PIVOT_X * scale,
       y: rect.top  + PIVOT_Y * scale,
@@ -92,7 +93,7 @@ export const ToneArm: React.FC<ToneArmProps> = ({ angle, onAngleChange, onDragEn
   return (
     <div
       ref={containerRef}
-      className="absolute w-[121px] h-[434px] pointer-events-none z-[35] select-none"
+      className="absolute w-[145px] h-[464px] pointer-events-none z-[35] select-none"
       style={{ left: POS_LEFT, top: POS_TOP }}
     >
       {/* Single rotating layer — arm image + hit area both rotate together,
@@ -118,7 +119,7 @@ export const ToneArm: React.FC<ToneArmProps> = ({ angle, onAngleChange, onDragEn
             onPointerLeave intentionally omitted: setPointerCapture keeps events flowing
             even when the cursor moves outside this element. */}
         <div
-          className="absolute top-[80px] left-[5px] w-[100px] h-[330px] cursor-grab active:cursor-grabbing pointer-events-auto"
+          className="absolute top-[90px] left-[5px] w-[100px] h-[330px] cursor-grab active:cursor-grabbing pointer-events-auto"
           style={{ touchAction: 'none' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
