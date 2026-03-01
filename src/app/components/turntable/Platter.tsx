@@ -107,12 +107,25 @@ export const Platter: React.FC<PlatterProps> = ({
   return (
     <div ref={platterRef} className="absolute top-[30px] left-[38px] w-[480px] h-[480px]">
       {/* Static platter base — never rotates */}
-      <img
-        src={platterBase}
-        alt=""
-        className="absolute inset-0 rounded-full w-full h-full object-cover pointer-events-none select-none"
-        draggable={false}
-      />
+      <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none select-none" style={{ isolation: 'isolate' }}>
+        <img
+          src={platterBase}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
+        {/* Wood-grain texture overlay — same technique as the chassis */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(/wood-texture.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            mixBlendMode: 'overlay',
+            opacity: 0.28,
+          }}
+        />
+      </div>
 
       {/* Rotating vinyl group */}
       <motion.div
@@ -123,7 +136,7 @@ export const Platter: React.FC<PlatterProps> = ({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {/* Outer disk (gold rim) — texture is baked into the SVG */}
+        {/* Outer disk — dark base ring */}
         <div className="absolute left-[19.82px] top-[19.81px] w-[440.37px] h-[440.37px]">
           <img alt="" className="absolute block w-full h-full" src={diskOuter} draggable={false} />
         </div>
@@ -142,6 +155,30 @@ export const Platter: React.FC<PlatterProps> = ({
         <div className="absolute left-[95.41px] top-[95.4px] w-[289.198px] h-[289.198px]">
           <img alt="" className="absolute block w-full h-full" src={diskGroove2} draggable={false} />
         </div>
+
+        {/* Vinyl grain/noise texture overlay — screen blend composites white speckles onto the dark vinyl */}
+        <svg
+          className="absolute pointer-events-none"
+          style={{ left: 0, top: 0, width: '480px', height: '480px', opacity: 0.15 }}
+          viewBox="0 0 480 480"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <filter id="vinylGrainFilter" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" seed="7586" result="noise" />
+              <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+              <feComponentTransfer in="alphaNoise" result="thresholded">
+                <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
+              </feComponentTransfer>
+              <feFlood floodColor="white" floodOpacity="0.9" result="whiteFill" />
+              <feComposite operator="in" in="whiteFill" in2="thresholded" />
+            </filter>
+            <clipPath id="vinylDiscClip">
+              <circle cx="240" cy="240" r="214.43" />
+            </clipPath>
+          </defs>
+          <rect x="0" y="0" width="480" height="480" fill="black" filter="url(#vinylGrainFilter)" clipPath="url(#vinylDiscClip)" />
+        </svg>
 
         {/* Album cover */}
         <div className="absolute left-[134.02px] top-[134.02px] w-[211.969px] h-[211.969px] rounded-full overflow-hidden">

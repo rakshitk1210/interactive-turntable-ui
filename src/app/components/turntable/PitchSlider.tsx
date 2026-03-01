@@ -101,7 +101,7 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
                     style={{ touchAction: 'none' }}
                 >
                     {/* Track background */}
-                    <div className="absolute inset-0 bg-[#f4f4f4] rounded-[8px] shadow-[inset_0px_0px_7px_2px_rgba(0,0,0,0.03)] pointer-events-none opacity-50" />
+                    <div className="absolute inset-0 bg-[#f4f4f4] rounded-[8px] shadow-[inset_0px_0px_7px_2px_rgba(0,0,0,0.03)] pointer-events-none opacity-100" />
 
                     {/* Groove */}
                     <div className="absolute left-[17px] top-[12.5px] w-[6px] h-[223px] bg-[#dadada] rounded-[99px] pointer-events-none">

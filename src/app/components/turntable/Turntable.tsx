@@ -130,7 +130,7 @@ export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, 
             </filter>
           </defs>
           <g filter="url(#filter0_i_armBase)">
-            <circle cx="97.2812" cy="97.2812" r="97.2812" fill="#F8F8F8" fillOpacity={0.5} paintOrder="stroke fill" />
+            <circle cx="97.2812" cy="97.2812" r="97.2812" fill="#F8F8F8" fillOpacity={0.6} paintOrder="stroke fill" />
           </g>
         </svg>
 
