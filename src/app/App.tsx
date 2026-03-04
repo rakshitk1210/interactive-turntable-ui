@@ -7,15 +7,18 @@ import { Toaster, toast } from 'sonner';
 
 const DEFAULT_TRACK = TRACKS[0];
 
-// The Turntable component is built at 720×540 px; we scale it down to 600×450.
-const TT_SCALE = 5 / 6;
+// The Turntable component is built at 720×540 px (4:3 aspect ratio).
+// On desktop (≥600px viewport) it renders at a fixed 600×450.
+// On mobile (<600px viewport) it scales to 90% of the viewport width.
 const TT_W = 720;
 const TT_H = 540;
-const TT_SCALED_W = TT_W * TT_SCALE; // 600
-const TT_SCALED_H = TT_H * TT_SCALE; // 450
+const MOBILE_BREAKPOINT = 600;
 
 export default function App() {
   const [track, setTrack] = useState<Track>(DEFAULT_TRACK);
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
   const [fileName, setFileName] = useState<string | null>(null);
   const [bgImage, setBgImage] = useState<string | null>(null);
 
@@ -25,6 +28,11 @@ export default function App() {
   const prevCoverUrlRef = useRef<string | null>(null);
   const prevCustomCoverUrlRef = useRef<string | null>(null);
   const prevBgUrlRef = useRef<string | null>(null);
+
+  const isMobile = windowWidth < MOBILE_BREAKPOINT;
+  const contentWidth = isMobile ? Math.round(windowWidth * 0.9) : 600;
+  const ttScale = contentWidth / TT_W;
+  const ttScaledH = Math.round(TT_H * ttScale);
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (prevCoverUrlRef.current) {
@@ -92,6 +100,12 @@ export default function App() {
   };
 
   useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (prevCoverUrlRef.current) URL.revokeObjectURL(prevCoverUrlRef.current);
       if (prevCustomCoverUrlRef.current) URL.revokeObjectURL(prevCustomCoverUrlRef.current);
@@ -151,29 +165,29 @@ export default function App() {
       <h1
         className="font-['Alfa_Slab_One',sans-serif] text-transparent bg-clip-text select-none pointer-events-none z-10 leading-none"
         style={{
-          fontSize: 112,
-          marginTop: 96,
-          marginBottom: -24,
+          fontSize: isMobile ? 48 : 112,
+          marginTop: isMobile ? 48 : 96,
+          marginBottom: isMobile ? -12 : -24,
           backgroundImage: 'linear-gradient(180deg,rgb(231, 231, 231) 28.6%, rgba(0, 0, 0, 0) 80.6%)',
         }}
       >
         SL-1200MK2
       </h1>
 
-      {/* Main 600px content column */}
-      <div className="relative z-10 flex flex-col gap-8 w-[600px]">
+      {/* Main content column — 600px on desktop, 90vw on mobile */}
+      <div className="relative z-10 flex flex-col gap-8" style={{ width: contentWidth }}>
 
-        {/* Turntable scaled down to 600×450 */}
+        {/* Turntable — scales uniformly via CSS transform */}
         <div
           style={{
-            width: TT_SCALED_W,
-            height: TT_SCALED_H,
+            width: contentWidth,
+            height: ttScaledH,
             overflow: 'hidden',
           }}
         >
           <div
             style={{
-              transform: `scale(${TT_SCALE})`,
+              transform: `scale(${ttScale})`,
               transformOrigin: 'top left',
               width: TT_W,
               height: TT_H,
@@ -191,8 +205,8 @@ export default function App() {
         )}
 
         {/* Action buttons row */}
-        <div className={`flex items-center justify-between ${isCustomTrack ? '-mt-4' : ''}`}>
-          <div className="flex items-center gap-3">
+        <div className={`flex ${isMobile ? 'flex-col items-start gap-3' : 'items-center justify-between'} ${isCustomTrack ? '-mt-4' : ''}`}>
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Upload your music */}
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -239,8 +253,8 @@ export default function App() {
         {/* Divider */}
         <div className="h-px bg-white/10" />
 
-        {/* Two-column info section */}
-        <div className="grid grid-cols-2 gap-6 pb-24 text-[14px] text-[#f2f5f7]">
+        {/* Two-column info section — collapses to single column on mobile */}
+        <div className={`grid gap-6 pb-24 text-[14px] text-[#f2f5f7] ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
           <div className="flex flex-col gap-2">
             <p className="font-['Inter_Tight',sans-serif] font-semibold">Elegance</p>
             <p className="font-['Inter_Tight',sans-serif] font-light opacity-90">
