@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { PitchShifter } from 'soundtouchjs';
 import { Chassis } from './Chassis';
 import { Platter } from './Platter';
 import { ToneArm } from './ToneArm';
@@ -16,81 +17,202 @@ interface TurntableProps {
 export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, shadowBlur = 25, shadowOpacity = 0.25 }) => {
   const [isMotorRunning, setIsMotorRunning] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
-  const [pitch, setPitch] = useState(1.0); // 0.92 to 1.08
-  const [armAngle, setArmAngle] = useState(-27); // Default Rest Position from Figma (-27.46)
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [pitch, setPitch] = useState(0); // semitones, -6 to +6
+  const [armAngle, setArmAngle] = useState(-27);
 
-  // Initialize Audio
+  // Audio engine refs
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const shifterRef = useRef<PitchShifter | null>(null);
+  const isConnectedRef = useRef(false);
+
+  // Tracks playback position during scrubbing (0-100 percentage)
+  const scrubPositionPctRef = useRef(0);
+
+  // Stable refs — avoids stale closures inside async callbacks
+  const isMotorRunningRef = useRef(false);
+  const isScrubbingRef = useRef(false);
+  const armAngleRef = useRef(-27);
+  const pitchRef = useRef(0);
+
+  isMotorRunningRef.current = isMotorRunning;
+  isScrubbingRef.current = isScrubbing;
+  armAngleRef.current = armAngle;
+  pitchRef.current = pitch;
+
+  const getOrCreateCtx = useCallback((): AudioContext => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const disconnectShifter = useCallback(() => {
+    if (shifterRef.current && isConnectedRef.current) {
+      try { shifterRef.current.disconnect(); } catch { /* already disconnected */ }
+      isConnectedRef.current = false;
+    }
+  }, []);
+
+  const connectShifter = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    const shifter = shifterRef.current;
+    if (!ctx || !shifter || isConnectedRef.current) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    shifter.connect(ctx.destination);
+    isConnectedRef.current = true;
+  }, []);
+
+  /**
+   * Creates a fresh PitchShifter with a loop-guarded onEnd.
+   * The guard prevents a false "end of track" trigger that SoundTouch can emit
+   * when its internal processing buffer drains after a pitch change or seek.
+   */
+  const makeShifter = useCallback((ctx: AudioContext, buffer: AudioBuffer): PitchShifter => {
+    const shifter = new PitchShifter(ctx, buffer, 4096, () => {
+      console.log('[ON END] timePlayed:', shifter.timePlayed.toFixed(2), '/ duration:', shifter.duration.toFixed(2), '| guard passes:', shifter.timePlayed > shifter.duration * 0.85);
+      if (shifterRef.current === shifter && shifter.timePlayed > shifter.duration * 0.85) {
+        shifter.percentagePlayed = 0;
+      }
+    });
+    shifter.pitchSemitones = pitchRef.current;
+    return shifter;
+  // pitchRef and shifterRef are stable refs — no deps needed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load + decode audio whenever the track URL changes
   useEffect(() => {
-    if (!audioRef.current) {
-        audioRef.current = new Audio(track.url);
-        audioRef.current.loop = true;
-        if (!track.url.startsWith('blob:')) {
-          audioRef.current.crossOrigin = "anonymous";
+    let cancelled = false;
+
+    const load = async () => {
+      disconnectShifter();
+      shifterRef.current = null;
+      audioBufferRef.current = null;
+
+      const ctx = getOrCreateCtx();
+
+      try {
+        const response = await fetch(track.url);
+        const arrayBuffer = await response.arrayBuffer();
+        if (cancelled) return;
+
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        if (cancelled) return;
+
+        audioBufferRef.current = audioBuffer;
+        const shifter = makeShifter(ctx, audioBuffer);
+        shifterRef.current = shifter;
+        isConnectedRef.current = false;
+
+        // Resume playback if the motor was already running when track loaded
+        const isArmOnRecord = armAngleRef.current > -10 && armAngleRef.current < 30;
+        if (isMotorRunningRef.current && isArmOnRecord && !isScrubbingRef.current) {
+          if (ctx.state === 'suspended') ctx.resume();
+          shifter.connect(ctx.destination);
+          isConnectedRef.current = true;
         }
-        audioRef.current.volume = 0.8;
-    } else {
-        const wasPlaying = !audioRef.current.paused;
-        audioRef.current.src = track.url;
-        audioRef.current.load();
-        if (wasPlaying && isMotorRunning) {
-             audioRef.current.play().catch(console.error);
-        }
-    }
-    
-    if (audioRef.current) {
-        audioRef.current.onerror = (e) => {
-            console.error("Audio Error:", e, audioRef.current?.error);
-        };
-    }
-    
-    return () => {
-       if (audioRef.current) {
-         audioRef.current.pause();
-         audioRef.current.src = '';
-         audioRef.current = null;
-       }
+      } catch (err) {
+        if (!cancelled) console.error('Failed to load audio:', err);
+      }
     };
+
+    load();
+
+    return () => {
+      cancelled = true;
+      disconnectShifter();
+      shifterRef.current = null;
+      audioBufferRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track.url]);
 
-  const handleScrub = (deltaTime: number) => {
-      if (audioRef.current) {
-          audioRef.current.currentTime = (audioRef.current.currentTime + deltaTime + audioRef.current.duration) % audioRef.current.duration;
-      }
-  };
-
+  // Play / pause based on motor, arm position, and scrub state
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!shifterRef.current || !audioCtxRef.current) return;
 
     const isArmOnRecord = armAngle > -10 && armAngle < 30;
+    const shouldPlay = isMotorRunning && isArmOnRecord && !isScrubbing;
 
-    if (isMotorRunning && isArmOnRecord && !isScrubbing) {
-        audio.playbackRate = pitch;
-        if (audio.paused) {
-            audio.play().catch(e => console.error("Autoplay prevented:", e));
-        }
+    if (shouldPlay) {
+      connectShifter();
     } else {
-        if (!audio.paused) {
-            audio.pause();
-        }
+      disconnectShifter();
     }
+  }, [isMotorRunning, isScrubbing, armAngle, connectShifter, disconnectShifter]);
 
-    if (!audio.paused) {
-        audio.playbackRate = pitch;
+  // Pitch change — update pitchSemitones live, no restart required
+  useEffect(() => {
+    if (shifterRef.current) {
+      shifterRef.current.pitchSemitones = pitch;
     }
-  }, [isMotorRunning, isScrubbing, armAngle, pitch, track]);
+  }, [pitch]);
+
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      disconnectShifter();
+      shifterRef.current = null;
+      audioBufferRef.current = null;
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+        audioCtxRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleMotor = () => {
-    setIsMotorRunning(!isMotorRunning);
+    if (audioCtxRef.current?.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+    setIsMotorRunning(prev => !prev);
   };
 
+  // Save the current playback position at scrub start
+  const handleScrubStart = () => {
+    console.log('[SCRUB START] percentagePlayed:', shifterRef.current?.percentagePlayed?.toFixed(2), '| timePlayed:', shifterRef.current?.timePlayed?.toFixed(2), '| shifter exists:', !!shifterRef.current);
+    if (shifterRef.current) {
+      scrubPositionPctRef.current = shifterRef.current.percentagePlayed;
+    }
+    setIsScrubbing(true);
+  };
+
+  // Accumulate position delta without touching the SoundTouch node
+  const handleScrub = (deltaTime: number) => {
+    const buffer = audioBufferRef.current;
+    if (!buffer) return;
+    const duration = buffer.duration;
+    const currentTime = (scrubPositionPctRef.current / 100) * duration;
+    const newTime = ((currentTime + deltaTime) % duration + duration) % duration;
+    scrubPositionPctRef.current = (newTime / duration) * 100;
+  };
+
+  /**
+   * On scrub end, rebuild the PitchShifter from scratch at the target position.
+   * This flushes SoundTouch's internal buffer so playback resumes cleanly from
+   * exactly the scrubbed-to position, without any stale audio data.
+   */
+  const handleScrubEnd = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    const buffer = audioBufferRef.current;
+    if (ctx && buffer) {
+      disconnectShifter();
+      const newShifter = makeShifter(ctx, buffer);
+      newShifter.percentagePlayed = scrubPositionPctRef.current / 100;
+      console.log('[SCRUB END] target:', scrubPositionPctRef.current.toFixed(2), '% | reads back as:', newShifter.percentagePlayed.toFixed(2), '%');
+      shifterRef.current = newShifter;
+      isConnectedRef.current = false;
+    }
+    setIsScrubbing(false);
+    // The play/pause effect will reconnect on the next render if motor is running
+  }, [disconnectShifter, makeShifter]);
+
   const handleDragEnd = () => {
-      // Snap to rest if close
-      if (armAngle < -20) {
-          setArmAngle(-27);
-      }
+    if (armAngle < -20) {
+      setArmAngle(-27);
+    }
   };
 
   return (
@@ -136,10 +258,10 @@ export const Turntable: React.FC<TurntableProps> = ({ track, borderRadius = 48, 
 
         <Platter
           isPlaying={isMotorRunning}
-          playbackRate={pitch}
+          playbackRate={1}
           onScrub={handleScrub}
-          onScrubStart={() => setIsScrubbing(true)}
-          onScrubEnd={() => setIsScrubbing(false)}
+          onScrubStart={handleScrubStart}
+          onScrubEnd={handleScrubEnd}
           track={track}
         />
 

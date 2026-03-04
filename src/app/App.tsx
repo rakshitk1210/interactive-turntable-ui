@@ -151,10 +151,10 @@ export default function App() {
       <h1
         className="font-['Alfa_Slab_One',sans-serif] text-transparent bg-clip-text select-none pointer-events-none z-10 leading-none"
         style={{
-          fontSize: 96,
+          fontSize: 112,
           marginTop: 96,
           marginBottom: -24,
-          backgroundImage: 'linear-gradient(180deg,rgb(231, 231, 231) 18.6%, rgba(2,3,2,0) 70.6%)',
+          backgroundImage: 'linear-gradient(180deg,rgb(231, 231, 231) 28.6%, rgba(0, 0, 0, 0) 80.6%)',
         }}
       >
         SL-1200MK2

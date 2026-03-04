@@ -3,7 +3,7 @@ import pitchLine from '../../../assets/pitch-line.svg';
 import goldTexture from '../../../assets/gold-texture-tile.jpg';
 
 interface PitchSliderProps {
-    value: number;
+    value: number;        // semitones, -6 to +6
     onChange: (value: number) => void;
 }
 
@@ -14,16 +14,20 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
 
     const GROOVE_HEIGHT = 223;
     const GROOVE_TOP_OFFSET = 12.5;
+    const MAX = 6;
+    const MIN = -6;
+    const RANGE = MAX - MIN; // 12
 
+    // top of groove = +6 semitones, bottom = -6 semitones
     const valueToY = (v: number) => {
-        const clamped = Math.max(0.92, Math.min(1.08, v));
-        const pct = (1.08 - clamped) / (1.08 - 0.92);
+        const clamped = Math.max(MIN, Math.min(MAX, v));
+        const pct = (MAX - clamped) / RANGE;
         return pct * GROOVE_HEIGHT;
     };
 
     const yToValue = (y: number) => {
         const pct = y / GROOVE_HEIGHT;
-        return 1.08 - (pct * 0.16);
+        return MAX - pct * RANGE;
     };
 
     const getValueFromEvent = (e: React.PointerEvent) => {
@@ -52,43 +56,45 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
         setIsDragging(false);
         e.currentTarget.releasePointerCapture(e.pointerId);
         const committed = draftValue ?? value;
-        const snapped = Math.abs(committed - 1.0) < 0.005 ? 1.0 : committed;
+        // Snap to 0 if within 0.15 semitones of centre
+        const snapped = Math.abs(committed) < 0.15 ? 0 : committed;
         setDraftValue(null);
         onChange(snapped);
     };
 
     const displayValue = isDragging && draftValue !== null ? draftValue : value;
     const currentY = valueToY(displayValue);
+
     return (
-        <div className="absolute left-[607px] top-[245.8px] w-[60.5px] h-[264px] select-none z-30 font-['Bree_Serif',serif]">
+        // Increased height (280px) to give the PITCH label clear space below the knob's
+        // maximum travel position (~257px from top), preventing overlap.
+        <div className="absolute left-[607px] top-[245.8px] w-[60.5px] h-[268px] select-none z-30 font-['Bree_Serif',serif]">
 
             {/* Number labels */}
-            <div className="absolute left-0 top-[12px] w-[7px] h-[223px] flex flex-col justify-between items-end text-[8px] text-[#b7b7b7] leading-none pointer-events-none opacity-50">
-                <div className="h-[4px] flex items-center"><span>+8</span></div>
-                <div className="h-[4px] flex items-center"><span>6</span></div>
+            <div className="absolute left-0 top-[12px] w-[7px] h-[223px] flex flex-col justify-between items-end text-[8px] text-[#b7b7b7] leading-none pointer-events-none opacity-100">
+                <div className="h-[4px] flex items-center"><span>+6</span></div>
                 <div className="h-[4px] flex items-center"><span>4</span></div>
                 <div className="h-[4px] flex items-center"><span>2</span></div>
-                <div className="h-[4px] flex items-center opacity-0"><span>0</span></div>
+                <div className="h-[4px] flex items-center"><span>0</span></div>
                 <div className="h-[4px] flex items-center"><span>2</span></div>
                 <div className="h-[4px] flex items-center"><span>4</span></div>
-                <div className="h-[4px] flex items-center"><span>6</span></div>
-                <div className="h-[4px] flex items-center"><span>-8</span></div>
+                <div className="h-[4px] flex items-center"><span>-6</span></div>
             </div>
 
             {/* Tick marks */}
-            <div className="absolute left-[9px] top-[12px] w-[4px] h-[223px] flex flex-col justify-between pointer-events-none opacity-50">
-                 {[...Array(9)].map((_, i) => (
+            <div className="absolute left-[9px] top-[12px] w-[4px] h-[223px] flex flex-col justify-between pointer-events-none opacity-100">
+                 {[...Array(7)].map((_, i) => (
                      <div key={i} className="w-full h-[4px] bg-[#b7b7b7] shrink-0" />
                  ))}
             </div>
 
             {/* Vertical reference line */}
-            <div className="absolute left-[13px] top-[12px] h-[223px] w-[1px] pointer-events-none opacity-50">
+            <div className="absolute left-[13px] top-[12px] h-[223px] w-[1px] pointer-events-none opacity-100">
                 <img alt="" className="block w-full h-full" src={pitchLine} draggable={false} />
             </div>
 
             {/* Slider body */}
-            <div className="absolute left-[21px] top-0 w-[40px] h-[264px]">
+            <div className="absolute left-[21px] top-0 w-[40px] h-[268px]">
 
                 {/* Track container */}
                 <div
@@ -133,9 +139,9 @@ export const PitchSlider: React.FC<PitchSliderProps> = ({ value, onChange }) => 
                     </div>
                 </div>
 
-                {/* PITCH label */}
-                <div className="absolute bottom-0 w-full text-center">
-                    <p className="text-[8px] text-[#b7b7b7] font-serif leading-none opacity-70">PITCH</p>
+                {/* PITCH label — sits below the knob's maximum travel at z-10 to stay on top */}
+                <div className="absolute bottom-0 w-full text-center z-10">
+                    <p className="text-[8px] text-[#b7b7b7] font-serif leading-none opacity-100">PITCH</p>
                 </div>
             </div>
 
